@@ -1,0 +1,41 @@
+include:
+  - local: 'terraform-runner/.gitlab-ci.yml'
+
+default:
+  tags:
+    - my-gitlab-runner
+
+before_script:
+  - echo "$SERVICE_ACCOUNT_JSON" | base64 -d > service-account.json
+  - gcloud auth activate-service-account "$SERVICE_ACCOUNT_NAME" --key-file=service-account.json
+  - gcloud auth print-access-token | crane auth login -u oauth2accesstoken --password-stdin gcr.io
+
+stages:
+  - build-branch
+  - build_and_tag_image_master
+
+.build-branch:
+  stage: build-branch
+  image: gcr.io/devops-workshop-2023/terraform-runner:0.0.0
+  script:
+    - >
+      cd $BUILD_DIR;
+      crane ls $GCR_REGISTRY/$IMAGE_NAME > all_versions.txt;
+      cat all_versions.txt | grep -o "$(cat version.txt)" > version_image.txt || true; 
+      VERSION_IMAGE="$(cat version_image.txt)";
+      if [ -n "$VERSION_IMAGE" ]; then
+        echo "Please update version.txt, image with this tag already exists in gcr.io";
+        exit 1
+      else
+        IMAGE_TAG="$(cat version.txt)"
+        gcloud builds submit --project=devops-workshop-2023 --tag=$GCR_REGISTRY/staging/$IMAGE_NAME:$IMAGE_TAG-$CI_COMMIT_SHORT_SHA
+      fi
+  allow_failure: false
+
+.build_and_tag_image_master:
+  stage: build_and_tag_image_master
+  image: gcr.io/devops-workshop-2023/terraform-runner:0.0.0
+  script:
+    - cd $BUILD_DIR
+    - IMAGE_TAG="$(cat version.txt)"
+    - gcloud builds submit --project=devops-workshop-2023 --tag=$GCR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG

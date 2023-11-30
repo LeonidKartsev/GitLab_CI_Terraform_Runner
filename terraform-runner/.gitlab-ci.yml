@@ -1,0 +1,13 @@
+variables:
+  BUILD_DIR: terraform-runner 
+  IMAGE_NAME: terraform-runner  
+  GCR_REGISTRY: gcr.io/devops-workshop-2023
+
+build-branch:
+  extends: .build-branch
+
+build_and_tag_image_master:
+  extends: .build_and_tag_image_master
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+

@@ -1,28 +1,28 @@
 
 ![Picture](https://res.cloudinary.com/qunux/image/upload/v1594405830/configure-gitlab-ci-with-gcr_opt_ek4srf.png)
 
-# This is a tag checker and image pusher
------
+# Container image tag checks and GCR publishing
 
-
-There is the main template **.gitlab-ci.yml** file in the root of the catalogue. The file helps us integrate the code into folders with images.
-
-Each folder contains the following file set:
-* **.gitlab-ci.yml**
-* **Dockerfile**
-* **version.txt**
-
-Each **.gitlab-ci.yml** file helps us to check tags of our existing images in **GCR** with the help of [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane)
-and push a new image of it does not exist. If it does the files can help to return the error `exit code 1`, and end the work.
-Each image version is located in the file
-**version.txt**.
-
-### Adding an Image to Google Container Registry
 ---
-* Create your branch
-* Add folder for the new image with dockerfile, version.txt etc.
-* Add .gitlab-ci.yaml to the folder (see example)
-* Include new directory ci to root gitlab-ci.yaml
-* Push your changes and create MR
-* Check build-branch job status (Staging artifact will be accessible at this time)
-* Merge to master and build artifact
+
+The repository root contains the main **`.gitlab-ci.yml`** template. It ties together per-image CI jobs across the project.
+
+Each image lives in its own directory with:
+
+* **`.gitlab-ci.yml`**
+* **`Dockerfile`**
+* **`version.txt`**
+
+Each per-directory **`.gitlab-ci.yml`** uses [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) to verify whether the image tag already exists in **Google Container Registry (GCR)**. If the tag is absent, CI builds and pushes the image; if the tag already exists, the job fails with exit code `1` so duplicate publishes are avoided. The tag to publish is read from **`version.txt`**.
+
+## Adding an image to Google Container Registry
+
+---
+
+1. Create a branch.
+2. Add a directory for the new image with `Dockerfile`, `version.txt`, and related files.
+3. Add a **`.gitlab-ci.yml`** in that directory (use an existing image folder as a reference).
+4. Include the new directory’s CI configuration in the root **`.gitlab-ci.yml`**.
+5. Push your changes and open a merge request.
+6. Confirm the `build-branch` job succeeds (staging artifacts are available at this stage).
+7. Merge to `master` and verify the production build artifact.
